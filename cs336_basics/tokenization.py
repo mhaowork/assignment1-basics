@@ -8,7 +8,7 @@ from torch._dynamo.utils import count_calls
 from tests.common import gpt2_bytes_to_unicode
 
 from cs336_basics.pretokenization import pretokenize_file
-from sortedcontainers import SortedSet
+from sortedcontainers import SortedDict, SortedSet
 
 
 
@@ -207,7 +207,7 @@ def train_bpe(
       return 1 if str1 < str2 else -1
     return 0
 
-  pretoken_count: dict[str, int] = pretokenize_file(input_path, 8, special_tokens[0].encode("utf-8"))
+  pretoken_count: dict[str, int] = pretokenize_file(input_path, 1, special_tokens[0].encode("utf-8"))
 
   # convert bytes to tuple of ints
   token_count: dict[tuple[int], int] = {
@@ -235,10 +235,10 @@ def train_bpe(
   # print(pair_to_tokens)
 
   # build count -> pair ss(sorted set)
-  count_to_pair_ss: dict[int, SortedSet[tuple[int, int]]] = defaultdict(lambda: SortedSet(key=cmp_to_key(compare_pairs)))
+  #count_to_pair_ss: SortedDict[int, SortedSet[tuple[int, int]]] = defaultdict(lambda: SortedSet(key=cmp_to_key(compare_pairs)))
+  count_to_pair_ss: SortedDict[int, SortedSet[tuple[int, int]]] = SortedDict()
   max_count = 0
   for pair, count in pair_count.items():
-    # TODO: look into using defaultdict idiom
     if not count_to_pair_ss.get(count):
       count_to_pair_ss[count] = SortedSet([], key=cmp_to_key(compare_pairs))
     count_to_pair_ss[count].add(pair)
@@ -250,12 +250,12 @@ def train_bpe(
   while len(vocab) < vocab_size:
     new_elem += 1
 
+    max_count = count_to_pair_ss.peekitem(-1)[0]
     while len(count_to_pair_ss[max_count]) == 0:
-      max_count -= 1
-
+      count_to_pair_ss.popitem()
+      max_count = count_to_pair_ss.peekitem(-1)[0]
     pair_to_merge: tuple[int, int]= count_to_pair_ss[max_count][0]
 
-    # print('max_count', max_count)
     # print('pair_to_merge', pair_to_merge, vocab[pair_to_merge[0]], vocab[pair_to_merge[1]])
 
     # new_tokens = []
@@ -283,7 +283,7 @@ def train_bpe(
 
       for affected_pair, (count_diff, should_add_or_remove) in deltas.items():
         pair_count[affected_pair] = pair_count.get(affected_pair, 0)
-        if affected_pair in count_to_pair_ss[pair_count[affected_pair]]:
+        if affected_pair in count_to_pair_ss.get(pair_count[affected_pair], set()):
           count_to_pair_ss[pair_count[affected_pair]].remove(affected_pair)
         if should_add_or_remove:
           if count_diff > 0:
@@ -291,6 +291,8 @@ def train_bpe(
           else:
             pair_to_token_ids[affected_pair].remove(token_id)
         pair_count[affected_pair] += count_diff * token_id_to_count[token_id]
+        if not count_to_pair_ss.get(pair_count[affected_pair]):
+          count_to_pair_ss[pair_count[affected_pair]] = SortedSet([], key=cmp_to_key(compare_pairs))
         count_to_pair_ss[pair_count[affected_pair]].add(affected_pair)
       
     # pair_count.remove(pair_to_merge)
