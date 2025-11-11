@@ -49,7 +49,7 @@ class MHSA(nn.Module):
 
     if rope is not None:
       if token_positions is None:
-        token_positions = torch.arrange(0, seq_len)
+        token_positions = torch.arange(seq_len)
       Q = rope.forward(Q, token_positions=token_positions)
       K = rope.forward(K, token_positions=token_positions)
 
