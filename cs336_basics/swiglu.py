@@ -13,6 +13,10 @@ class SwiGLU(nn.Module):
     self.w2 = nn.Parameter(torch.empty(d_model, d_ff))
     self.w3 = nn.Parameter(torch.empty(d_ff, d_model))
 
+    # TODO: verify this: You should set dff to approximately 8/3 × d_model
+    # in your implementation, while ensuring that the dimensionality of
+    # the inner feed-forward layer is a multiple of 64 to make good use of your hardware
+
   def forward(self, x: Float[Tensor, "... d_model"]) -> Float[Tensor, "... d_model"]:
     # SiLU(x) = x·σ(x) = x / (1 + e ** −x)
     # FFN(x) = SwiGLU(x, W1, W2, W3) = (SiLU(xW1) ⊙ xW3)w2
