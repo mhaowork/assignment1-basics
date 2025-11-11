@@ -18,6 +18,7 @@ from cs336_basics.scaled_dot_product_attention import SDPA
 from cs336_basics.softmax import Softmax
 from cs336_basics.swiglu import SwiGLU
 from cs336_basics.transformer_block import TransformerBlock
+from cs336_basics.transformer_lm import TransformerLM
 
 
 def run_linear(
@@ -416,8 +417,17 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
-
+    lm = TransformerLM(
+        vocab_size=vocab_size,
+        num_layers=num_layers,
+        d_model=d_model,
+        num_heads=num_heads,
+        d_ff=d_ff,
+        max_seq_len=context_length,
+        rope_theta=rope_theta,
+        weights=weights,
+    )
+    return lm(in_indices)
 
 def run_rmsnorm(
     d_model: int,
