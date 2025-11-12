@@ -39,13 +39,13 @@ class MHSA(nn.Module):
     K = x @ self.k_weights.T
     V = x @ self.v_weights.T
 
-    print(f"Q shape: {Q.shape}")
+    # print(f"Q shape: {Q.shape}")
 
     Q = rearrange(Q, '... L (h e) -> ... h L e', h=self.num_heads)
     K = rearrange(K, '... L (h e) -> ... h L e', h=self.num_heads)
     V = rearrange(V, '... L (h e) -> ... h L e', h=self.num_heads)
 
-    print(f"Q_sliced_stacked shape: {Q.shape}")
+    # print(f"Q_sliced_stacked shape: {Q.shape}")
 
     if rope is not None:
       if token_positions is None:
@@ -57,10 +57,10 @@ class MHSA(nn.Module):
     mask = torch.ones(seq_len, seq_len, dtype=torch.bool).triu().T
     MHA = SDPA().forward(Q, K, V, mask=mask)
 
-    print(f"MHA shape after SDPA: {MHA.shape}")
+    # print(f"MHA shape after SDPA: {MHA.shape}")
 
     MHA = rearrange(MHA, '... h L d -> ... L (h d)')
-    print(f"MHA shape after rearrange: {MHA.shape}")
+    # print(f"MHA shape after rearrange: {MHA.shape}")
 
 
     return MHA @ self.output_weights.T
