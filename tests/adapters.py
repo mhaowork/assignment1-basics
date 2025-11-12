@@ -332,7 +332,25 @@ def run_transformer_block(
         d_ff=d_ff,
         max_seq_len=max_seq_len,
         theta=theta,
-        weights=weights,
+    )
+
+    block.rmsnorm1.load_state_dict({"gain": weights["ln1.weight"]})
+    block.mhsa.load_state_dict(
+        {
+            "q_weights": weights["attn.q_proj.weight"],
+            "k_weights": weights["attn.k_proj.weight"],
+            "v_weights": weights["attn.v_proj.weight"],
+            "output_weights": weights["attn.output_proj.weight"],
+        }
+    )
+
+    block.rmsnorm2.load_state_dict({"gain": weights["ln2.weight"]})
+    block.ffn.load_state_dict(
+        {
+            "w1": weights["ffn.w1.weight"],
+            "w2": weights["ffn.w2.weight"],
+            "w3": weights["ffn.w3.weight"],
+        }
     )
 
     return block.forward(in_features)
@@ -425,8 +443,33 @@ def run_transformer_lm(
         d_ff=d_ff,
         max_seq_len=context_length,
         rope_theta=rope_theta,
-        weights=weights,
     )
+    lm.input_embedding.load_state_dict({"W": weights["token_embeddings.weight"]})
+
+    for idx in range(num_layers):
+        block = lm.transformer_blocks[idx]
+        key_prefix = f"layers.{idx}."
+        block.rmsnorm1.load_state_dict({"gain": weights[key_prefix + "ln1.weight"]})
+        block.mhsa.load_state_dict(
+            {
+                "q_weights": weights[key_prefix + "attn.q_proj.weight"],
+                "k_weights": weights[key_prefix + "attn.k_proj.weight"],
+                "v_weights": weights[key_prefix + "attn.v_proj.weight"],
+                "output_weights": weights[key_prefix + "attn.output_proj.weight"],
+            }
+        )
+
+        block.rmsnorm2.load_state_dict({"gain": weights[key_prefix + "ln2.weight"]})
+        block.ffn.load_state_dict(
+            {
+                "w1": weights[key_prefix + "ffn.w1.weight"],
+                "w2": weights[key_prefix + "ffn.w2.weight"],
+                "w3": weights[key_prefix + "ffn.w3.weight"],
+            }
+        )
+    lm.output_embedding.load_state_dict({"W": weights["lm_head.weight"]})
+    lm.rmsnorm_final.load_state_dict({"gain": weights["ln_final.weight"]})
+
     return lm(in_indices)
 
 def run_rmsnorm(
