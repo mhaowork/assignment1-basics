@@ -16,8 +16,9 @@ def get_batch(
     device=device,
   )
 
-  batches = t[indices.reshape(-1, 1) + torch.arange(context_length)]
-  targets = t[indices.reshape(-1, 1) + torch.arange(context_length) + 1]
+  offset = torch.arange(context_length, device=indices.device)
+  batches = t[indices.reshape(-1, 1) + offset]
+  targets = t[indices.reshape(-1, 1) + offset + 1]
 
   return batches, targets
 
