@@ -11,7 +11,7 @@ from torch import Tensor
 
 from cs336_basics.adamw import AdamW
 from cs336_basics.checkpointing import load_checkpoint, save_checkpoint
-from cs336_basics.cross_entropy import CrossEntropy
+from cs336_basics.cross_entropy import CrossEntropy, calc_cross_entropy
 from cs336_basics.embedding import Embedding
 from cs336_basics.get_batch import get_batch
 from cs336_basics.gradient_clipping import do_gradient_clipping
@@ -572,7 +572,7 @@ def run_cross_entropy(
     Returns:
         Float[Tensor, ""]: The average cross-entropy loss across examples.
     """
-    return CrossEntropy.forward(inputs, targets=targets)
+    return calc_cross_entropy(inputs, targets=targets)
 
 
 def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:
@@ -714,5 +714,5 @@ def run_train_bpe(
                 representing that <token1> was merged with <token2>.
                 Merges are ordered by order of creation.
     """
-    from cs336_basics.tokenization import train_bpe
+    from cs336_basics.train_bpe_tokenizer import train_bpe
     return train_bpe(input_path, vocab_size, special_tokens)

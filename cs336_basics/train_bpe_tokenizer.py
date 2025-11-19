@@ -2,7 +2,6 @@ from collections import defaultdict
 from functools import cmp_to_key
 import os
 
-from sympy import O
 from sympy.sets.contains import Set
 from torch._dynamo.utils import count_calls
 from tests.common import gpt2_bytes_to_unicode
