@@ -5,22 +5,20 @@ import numpy.typing as npt
 def get_batch(
   dataset: npt.NDArray, batch_size: int, context_length: int, device: str
 ) -> tuple[torch.Tensor, torch.Tensor]:
-  t = torch.tensor(dataset, device=device, dtype=torch.int64)
-  
-  #TODO: what if dataset is too big to load (see assignment doc)
-
   indices = torch.randint(
     low=0,
     high=len(dataset) - context_length,
     size=(batch_size,),
-    device=device,
   )
 
-  offset = torch.arange(context_length, device=indices.device)
-  batches = t[indices.reshape(-1, 1) + offset]
-  targets = t[indices.reshape(-1, 1) + offset + 1]
+  offset = torch.arange(context_length)
+  batches = dataset[indices.reshape(-1, 1) + offset]
+  targets = dataset[indices.reshape(-1, 1) + offset + 1]
 
-  return batches, targets
+  return (
+    torch.tensor(batches, device=device, dtype=torch.int64),
+    torch.tensor(targets, device=device, dtype=torch.int64)
+  )
 
 
   
