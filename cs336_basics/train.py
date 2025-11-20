@@ -12,15 +12,6 @@ from cs336_basics.gradient_clipping import do_gradient_clipping
 from cs336_basics.letstokenize import get_vocab_size
 from cs336_basics.transformer_lm import TransformerLM
 
-def _load_dataset_slice(token_file: str | os.PathLike, fraction: float = 1.0):
-  """Memory-map only a fraction of the token file to limit memory footprint."""
-  assert 0 < fraction <= 1.0
-  dtype = np.dtype('uint16')
-  file_size = os.path.getsize(token_file)
-  total_tokens = file_size // dtype.itemsize
-  slice_len = max(1, int(total_tokens * fraction))
-  return np.memmap(token_file, dtype=dtype, mode='r', shape=(slice_len,))
-
 
 def train(
   train_token_file: str | os.PathLike,
@@ -40,8 +31,8 @@ def train(
   val_steps: int = 10,
   in_checkpoint_file: str | os.PathLike | None = None,
 ):
-  train_dataset = _load_dataset_slice(train_token_file, fraction=1)
-  valid_dataset = _load_dataset_slice(valid_token_file, fraction=1)
+  train_dataset = np.memmap(train_token_file, dtype='uint16', mode='r')
+  valid_dataset = np.memmap(valid_token_file, dtype='uint16', mode='r')
 
   model = TransformerLM(
     vocab_size=vocab_size,
