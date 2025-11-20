@@ -40,8 +40,8 @@ def train(
   val_steps: int = 10,
   in_checkpoint_file: str | os.PathLike | None = None,
 ):
-  train_dataset = _load_dataset_slice(train_token_file, fraction=0.1)
-  valid_dataset = _load_dataset_slice(valid_token_file, fraction=0.1)
+  train_dataset = _load_dataset_slice(train_token_file, fraction=1)
+  valid_dataset = _load_dataset_slice(valid_token_file, fraction=1)
 
   model = TransformerLM(
     vocab_size=vocab_size,
@@ -144,8 +144,8 @@ if __name__ == "__main__":
     train_token_file="../data/TinyStoriesV2-GPT4-train-tokens.txt",
     valid_token_file="../data/TinyStoriesV2-GPT4-valid-tokens.txt",
     out_checkpoint_file=f"../data/TinyStoriesV2-GPT4-checkpoint-{timestamp}.txt",
-    in_checkpoint_file="../data/TinyStoriesV2-GPT4-checkpoint-11191940.txt",
-    epoches=10,
+    in_checkpoint_file="../data/TinyStoriesV2-GPT4-checkpoint-11192009.txt",
+    epoches=50,
     vocab_size=get_vocab_size(),
     batch_size=48,
     context_length=256,
