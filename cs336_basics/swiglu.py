@@ -3,15 +3,16 @@ import torch
 from torch import Tensor, nn
 
 class SwiGLU(nn.Module):
-  def __init__(self, d_model: int, d_ff: int):
+  def __init__(self, d_model: int, d_ff: int, device=None):
     super().__init__()
 
     self.d_model = d_model
     self.d_ff = d_ff
 
-    self.w1 = nn.Parameter(torch.empty(d_ff, d_model))
-    self.w2 = nn.Parameter(torch.empty(d_model, d_ff))
-    self.w3 = nn.Parameter(torch.empty(d_ff, d_model))
+    std = 0.02 # gpt-2 style
+    self.w1 = nn.Parameter(torch.randn(d_ff, d_model, device=device) * std)
+    self.w2 = nn.Parameter(torch.randn(d_model, d_ff, device=device) * std)
+    self.w3 = nn.Parameter(torch.randn(d_ff, d_model, device=device) * std)
 
     # TODO: verify this: You should set dff to approximately 8/3 × d_model
     # in your implementation, while ensuring that the dimensionality of

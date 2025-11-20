@@ -11,16 +11,17 @@ from cs336_basics.scaled_dot_product_attention import SDPA
 import torch.nn.functional as F
 
 class MHSA(nn.Module):
-  def __init__(self, d_model, num_heads) -> None:
+  def __init__(self, d_model, num_heads, device = None) -> None:
     super().__init__()
 
     self.d_model = d_model
     self.num_heads = num_heads
 
-    self.q_weights = nn.Parameter(torch.empty(d_model, d_model))
-    self.k_weights = nn.Parameter(torch.empty(d_model, d_model))
-    self.v_weights = nn.Parameter(torch.empty(d_model, d_model))
-    self.output_weights = nn.Parameter(torch.empty(d_model, d_model))
+    std = 0.02 # GPT-2 style
+    self.q_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
+    self.k_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
+    self.v_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
+    self.output_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
 
 
   def forward(

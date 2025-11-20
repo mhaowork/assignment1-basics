@@ -5,7 +5,7 @@ import numpy.typing as npt
 def get_batch(
   dataset: npt.NDArray, batch_size: int, context_length: int, device: str
 ) -> tuple[torch.Tensor, torch.Tensor]:
-  t = torch.Tensor(dataset, device=device)
+  t = torch.tensor(dataset, device=device, dtype=torch.int64)
   
   #TODO: what if dataset is too big to load (see assignment doc)
 

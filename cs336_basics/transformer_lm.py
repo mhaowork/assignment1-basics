@@ -17,24 +17,28 @@ class TransformerLM(nn.Module):
         d_ff: int,
         max_seq_len: int,
         rope_theta: float,
+        device: str | None = None,
+        dtype: str | None = None,
     ):
         super().__init__()
         # TODO: determine dtype & device for Transformer LM
         self.input_embedding = Embedding(
-            vocab_size=vocab_size, embedding_dim=d_model, device=None, dtype=None
+            vocab_size=vocab_size, embedding_dim=d_model, device=device, dtype=dtype
         )
-        self.transformer_blocks = [
+        self.transformer_blocks = nn.ModuleList([
             TransformerBlock(
                 d_model=d_model,
                 num_heads=num_heads,
                 d_ff=d_ff,
                 max_seq_len=max_seq_len,
                 theta=rope_theta,
+                device=device,
+                dtype=dtype,
             )
             for idx in range(num_layers)
-        ]
-        self.output_embedding = Linear(d_in=d_model, d_out=vocab_size)
-        self.rmsnorm_final = RMSNorm(d_model=d_model)
+        ])
+        self.output_embedding = Linear(d_in=d_model, d_out=vocab_size, device=device, dtype=dtype)
+        self.rmsnorm_final = RMSNorm(device=device, dtype=dtype, d_model=d_model)
 
     def forward(self, in_indicies: Tensor):
         x = self.input_embedding(in_indicies)

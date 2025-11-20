@@ -34,7 +34,7 @@ class Embedding(nn.Module):
       [5,4,5,1,4]
       """
 
-      self.W = nn.Parameter(torch.empty(vocab_size, embedding_dim))
+      self.W = nn.Parameter(torch.empty(vocab_size, embedding_dim, device=device, dtype=dtype))
 
       nn.init.trunc_normal_(self.W, mean=0.0, std=1, a=-3, b=3)
 
