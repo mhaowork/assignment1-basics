@@ -17,11 +17,11 @@ class MHSA(nn.Module):
     self.d_model = d_model
     self.num_heads = num_heads
 
-    std = 0.02 # GPT-2 style
-    self.q_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
-    self.k_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
-    self.v_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
-    self.output_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
+    std = 0.02 # GPT-2 style TODO verify this
+    self.q_weights = nn.Parameter(torch.randn(d_model, d_model, device=device) * std)
+    self.k_weights = nn.Parameter(torch.randn(d_model, d_model, device=device) * std)
+    self.v_weights = nn.Parameter(torch.randn(d_model, d_model, device=device) * std)
+    self.output_weights = nn.Parameter(torch.randn(d_model, d_model, device=device) * std)
 
     self.sdpa = SDPA()
 
