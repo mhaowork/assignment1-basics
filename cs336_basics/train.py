@@ -10,6 +10,7 @@ from cs336_basics.cross_entropy import calc_cross_entropy
 from cs336_basics.get_batch import get_batch
 from cs336_basics.gradient_clipping import do_gradient_clipping
 from cs336_basics.letstokenize import get_vocab_size
+from cs336_basics.model_config import ModelConfig
 from cs336_basics.transformer_lm import TransformerLM
 
 
@@ -131,20 +132,21 @@ def train(
 
 if __name__ == "__main__":
   timestamp = datetime.datetime.now().strftime("%m%d%H%M")
+  config = ModelConfig()
   train(
     train_token_file="../data/TinyStoriesV2-GPT4-train-tokens.txt",
     valid_token_file="../data/TinyStoriesV2-GPT4-valid-tokens.txt",
     out_checkpoint_file=f"../data/TinyStoriesV2-GPT4-checkpoint-{timestamp}.txt",
     in_checkpoint_file="../data/TinyStoriesV2-GPT4-checkpoint-11192009.txt",
-    epoches=50,
-    vocab_size=get_vocab_size(),
-    batch_size=48,
-    context_length=256,
-    d_model=384,
-    num_layers=3,
-    num_heads=12,
-    d_ff=1536,
-    rope_theta=10000,
+    epoches=100,
+    vocab_size=config.vocab_size,
+    batch_size=config.batch_size,
+    context_length=config.context_length,
+    d_model=config.d_model,
+    num_layers=config.num_layers,
+    num_heads=config.num_heads,
+    d_ff=config.d_ff,
+    rope_theta=config.rope_theta,
     device='mps',
     train_steps_per_epoch=10,  # Number of training batches per epoch
     val_steps=3,  # Number of validation batches

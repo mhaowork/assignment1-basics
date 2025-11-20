@@ -1,10 +1,22 @@
 import os
+from typing import Sequence
 import tiktoken
 import numpy as np
 
-def encode(src: str | os.PathLike, dst: str | os.PathLike, model='gpt-2'):
+def encode_text(text: str, model='gpt-2'):
   enc = tiktoken.encoding_for_model(model)
 
+  return enc.encode_ordinary(text=text)
+
+def decode_tokens(tokens: Sequence[int], model='gpt-2'):
+  enc = tiktoken.encoding_for_model(model)
+
+  return enc.decode(tokens)
+
+def get_special_tokens(model='gpt-2'):
+  return tiktoken.encoding_for_model(model).special_tokens_set
+
+def encode(src: str | os.PathLike, dst: str | os.PathLike, model='gpt-2'):
   buffer = []
   token_count = 0
   with open(src, 'r', encoding='utf-8') as f_in,\
@@ -14,7 +26,7 @@ def encode(src: str | os.PathLike, dst: str | os.PathLike, model='gpt-2'):
 
       if not chunk:
         break
-      tokens = enc.encode_ordinary(text=chunk) #TODO: special tokens?
+      tokens = encode_text(text=chunk, model=model) #TODO: special tokens?
       
       buffer.extend(tokens)
       
