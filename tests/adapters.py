@@ -21,7 +21,7 @@ from cs336_basics.multihead_self_attention import MHSA
 from cs336_basics.rmsnorm import RMSNorm
 from cs336_basics.rope import RoPE
 from cs336_basics.scaled_dot_product_attention import SDPA
-from cs336_basics.softmax import Softmax
+from cs336_basics.softmax import softmax
 from cs336_basics.swiglu import SwiGLU
 from cs336_basics.transformer_block import TransformerBlock
 from cs336_basics.transformer_lm import TransformerLM
@@ -554,7 +554,7 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
         softmax normalizing the specified `dim`.
     """
-    return Softmax().forward(in_features, dim_idx=dim)
+    return softmax(in_features, dim_idx=dim)
 
 
 def run_cross_entropy(

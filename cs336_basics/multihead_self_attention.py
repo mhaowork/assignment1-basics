@@ -23,6 +23,8 @@ class MHSA(nn.Module):
     self.v_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
     self.output_weights = nn.Parameter(torch.randn(d_model, d_model, device=device)) * std
 
+    self.sdpa = SDPA()
+
 
   def forward(
     self,
@@ -56,7 +58,7 @@ class MHSA(nn.Module):
 
 
     mask = torch.ones(seq_len, seq_len, dtype=torch.bool).triu().T
-    MHA = SDPA().forward(Q, K, V, mask=mask)
+    MHA = self.sdpa(Q, K, V, mask=mask)
 
     # print(f"MHA shape after SDPA: {MHA.shape}")
 

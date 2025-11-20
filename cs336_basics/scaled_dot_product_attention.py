@@ -4,7 +4,7 @@ from torch import Tensor, device, nn
 
 import torch
 
-from cs336_basics.softmax import Softmax
+from cs336_basics.softmax import softmax
 
 class SDPA(nn.Module):
 
@@ -25,8 +25,8 @@ class SDPA(nn.Module):
       pre_softmax = pre_softmax + torch.where(mask, 0, -torch.inf).to(device=pre_softmax.device)
 
     # "... queries keys"
-    softmax = Softmax().forward(pre_softmax, dim_idx=-1)
-    return softmax @ V
+    softmax_res = softmax(pre_softmax, dim_idx=-1)
+    return softmax_res @ V
 
 
     
