@@ -11,7 +11,7 @@ from torch import Tensor
 
 from cs336_basics.adamw import AdamW
 from cs336_basics.checkpointing import load_checkpoint, save_checkpoint
-from cs336_basics.cross_entropy import CrossEntropy, calc_cross_entropy
+from cs336_basics.cross_entropy import calc_cross_entropy
 from cs336_basics.embedding import Embedding
 from cs336_basics.get_batch import get_batch
 from cs336_basics.gradient_clipping import do_gradient_clipping

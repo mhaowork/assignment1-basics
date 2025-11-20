@@ -12,9 +12,6 @@ class AdamW(torch.optim.Optimizer):
   def step(self):
     # loss = None if closure is None else closure()
 
-    param_shape = self.param_groups[0]["params"][0].shape
-    m, v = torch.zeros(param_shape), torch.zeros(param_shape)
-
     for group in self.param_groups:
       lr = group["lr"] # Get the learning rate.
       betas = group["betas"]
@@ -26,27 +23,24 @@ class AdamW(torch.optim.Optimizer):
           continue
         state = self.state[p]
         if len(state) == 0:
-          state['t'] = 1
+          state['t'] = 0
           state['m'] = torch.zeros_like(p)
           state['v'] = torch.zeros_like(p)
         m = state['m']
         v = state['v']
-        t = state['t']
+        t = state['t'] + 1
 
         grad = p.grad.data
 
-        # TODO (optimize): use in-place ops
-        m = betas[0] * m + (1 - betas[0]) * grad
-        v = betas[1] * v + (1 - betas[1]) * grad * grad
+        m.mul_(betas[0]).add_(grad, alpha=(1 - betas[0]))
+        v.mul_(betas[1]).addcmul_(grad, grad, value=(1 - betas[1]))
 
         lr_t = lr * math.sqrt(1 - betas[1] ** t) / (1 - betas[0] ** t)
 
         p.data -= lr_t * m / (torch.sqrt(v) + eps)
         p.data -= lr * weight_decay * p.data
 
-        state["t"] = t + 1
-        state["m"] = m
-        state["v"] = v
+        state["t"] = t
 
 
 
