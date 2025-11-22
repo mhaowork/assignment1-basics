@@ -210,7 +210,7 @@ if __name__ == "__main__":
     num_heads=config.num_heads,
     d_ff=config.d_ff,
     rope_theta=config.rope_theta,
-    device='mps',
+    device='cuda',
     train_steps_per_epoch=25,  # Number of training batches per epoch
     val_steps=3,  # Number of validation batches
     wandb_project="cs336-assignment1",
