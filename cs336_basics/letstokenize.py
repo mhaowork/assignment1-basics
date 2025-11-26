@@ -51,7 +51,9 @@ def get_vocab_size(model='gpt-2'):
 
 if __name__ == "__main__":
   # encode('../data/TinyStoriesV2-GPT4-train.txt', '../data/TinyStoriesV2-GPT4-train-tokens.txt')
-  encode('../data/TinyStoriesV2-GPT4-valid.txt', '../data/TinyStoriesV2-GPT4-valid-tokens.txt')
+  # encode('../data/TinyStoriesV2-GPT4-valid.txt', '../data/TinyStoriesV2-GPT4-valid-tokens.txt')
+  # encode('../data/owt_train.txt', '../data/owt_train_tokens.txt')
+  encode('../data/owt_valid.txt', '../data/owt_valid_tokens.txt')
 
 
 

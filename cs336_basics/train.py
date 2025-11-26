@@ -1,9 +1,11 @@
 import os
-from torch import no_grad
+import datetime
+from dataclasses import dataclass
+
 import numpy as np
 import torch
-import datetime
 import wandb
+from torch import no_grad
 
 from cs336_basics.adamw import AdamW
 from cs336_basics.checkpointing import load_checkpoint, save_checkpoint
@@ -15,9 +17,24 @@ from cs336_basics.model_config import ModelConfig
 from cs336_basics.transformer_lm import TransformerLM
 
 
+@dataclass
+class TrainingPaths:
+  train_token_file: str | os.PathLike
+  valid_token_file: str | os.PathLike
+  out_checkpoint_file: str | os.PathLike
+  in_checkpoint_file: str | os.PathLike | None = None
+
+
+@dataclass
+class WandbSettings:
+  project: str
+  run_name: str | None = None
+
+
 def train(
-  train_token_file: str | os.PathLike,
-  valid_token_file: str | os.PathLike,
+  *,
+  train_dataset,
+  valid_dataset,
   epoches: int,
   vocab_size: int,
   batch_size: int,
@@ -32,11 +49,8 @@ def train(
   train_steps_per_epoch: int = 100,
   val_steps: int = 10,
   in_checkpoint_file: str | os.PathLike | None = None,
-  wandb_project: str | None = None,
-  wandb_run_name: str | None = None,
+  wandb_settings: WandbSettings | None = None,
 ):
-  train_dataset = np.memmap(train_token_file, dtype='uint16', mode='r')
-  valid_dataset = np.memmap(valid_token_file, dtype='uint16', mode='r')
 
   model = TransformerLM(
     vocab_size=vocab_size,
@@ -51,10 +65,10 @@ def train(
   optimizer = AdamW(params=model.parameters())
 
   wandb_run = None
-  if wandb_project is not None:
+  if wandb_settings is not None:
     wandb_config = dict(
-      train_token_file=str(train_token_file),
-      valid_token_file=str(valid_token_file),
+      train_token_file=str(getattr(train_dataset, 'filename', 'in-memory')),
+      valid_token_file=str(getattr(valid_dataset, 'filename', 'in-memory')),
       batch_size=batch_size,
       context_length=context_length,
       d_model=d_model,
@@ -69,8 +83,8 @@ def train(
       device=device,
     )
     wandb_run = wandb.init(
-      project=wandb_project,
-      name=wandb_run_name,
+      project=wandb_settings.project,
+      name=wandb_settings.run_name,
       config=wandb_config,
     )
     wandb_run.define_metric("global_step")
@@ -193,28 +207,69 @@ def train(
     wandb_run.finish()
 
 
-if __name__ == "__main__":
-  timestamp = datetime.datetime.now().strftime("%m%d%H%M")
-  config = ModelConfig()
+def train_with_config(
+  config: ModelConfig,
+  paths: TrainingPaths,
+  *,
+  epoches: int,
+  device: str,
+  train_steps_per_epoch: int = 100,
+  val_steps: int = 10,
+  batch_size: int | None = None,
+  wandb_settings: WandbSettings | None = None,
+  train_dataset=None,
+  valid_dataset=None,
+):
+  """Run training using a ModelConfig and filesystem paths."""
+
+  train_data = train_dataset
+  if train_data is None:
+    train_data = np.memmap(paths.train_token_file, dtype='uint16', mode='r')
+
+  valid_data = valid_dataset
+  if valid_data is None:
+    valid_data = np.memmap(paths.valid_token_file, dtype='uint16', mode='r')
+
   train(
-    train_token_file="../data/TinyStoriesV2-GPT4-train-tokens.txt",
-    valid_token_file="../data/TinyStoriesV2-GPT4-valid-tokens.txt",
-    out_checkpoint_file=f"../data/TinyStoriesV2-GPT4-checkpoint-{timestamp}.txt",
-    # in_checkpoint_file="../data/TinyStoriesV2-GPT4-checkpoint-11192009.txt",
-    epoches=200,
+    train_dataset=train_data,
+    valid_dataset=valid_data,
+    epoches=epoches,
     vocab_size=config.vocab_size,
-    batch_size=config.batch_size,
+    batch_size=batch_size or config.batch_size,
     context_length=config.context_length,
     d_model=config.d_model,
     num_layers=config.num_layers,
     num_heads=config.num_heads,
     d_ff=config.d_ff,
     rope_theta=config.rope_theta,
-    device='cuda',
+    device=device,
+    out_checkpoint_file=paths.out_checkpoint_file,
+    train_steps_per_epoch=train_steps_per_epoch,
+    val_steps=val_steps,
+    in_checkpoint_file=paths.in_checkpoint_file,
+    wandb_settings=wandb_settings,
+  )
+
+
+if __name__ == "__main__":
+  timestamp = datetime.datetime.now().strftime("%m%d%H%M")
+  config = ModelConfig()
+  train_with_config(
+    config=config,
+    paths=TrainingPaths(
+      train_token_file="../data/owt_train_tokens.txt",
+      valid_token_file="../data/owt_valid_tokens.txt",
+      out_checkpoint_file=f"../data/owt-checkpoint-{timestamp}.txt",
+      # in_checkpoint_file="../data/TinyStoriesV2-GPT4-checkpoint-11192009.txt",
+    ),
+    epoches=200,
+    device='mps',
     train_steps_per_epoch=25,  # Number of training batches per epoch
     val_steps=3,  # Number of validation batches
-    wandb_project="cs336-assignment1",
-    wandb_run_name=f"TinyStoriesRun-{timestamp}",
+    wandb_settings=WandbSettings(
+      project="cs336-assignment1",
+      run_name=f"owt-training-{timestamp}",
+    ),
   )
 
 

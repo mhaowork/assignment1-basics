@@ -48,3 +48,44 @@ gunzip owt_valid.txt.gz
 cd ..
 ```
 
+## Training on Modal GPUs
+
+You can launch the provided training loop on a hosted GPU using
+[Modal](https://modal.com/). The `train_modal.py` script packages this repo,
+mounts a persistent volume that stores tokenizer data/checkpoints, and runs the
+`train_with_config` helper inside a GPU function.
+
+1. Install the Modal CLI (`pip install modal`) and log in with
+   `modal token new`.
+2. Create a volume that will hold the tokenized training data (defaults to the
+   OpenWebText tokens) and any checkpoints. The script defaults to
+   `cs336-basics-data` mounted at `/data`. Upload files with:
+
+   ```sh
+   modal volume create cs336-basics-data  # only once
+   modal volume put cs336-basics-data data/owt_train_tokens.txt:/owt_train_tokens.txt
+   modal volume put cs336-basics-data data/owt_valid_tokens.txt:/owt_valid_tokens.txt
+   ```
+
+3. (Optional) Store your WandB API key in a Modal secret so the remote job can
+   log metrics:
+
+   ```sh
+   modal secret create wandb WANDB_API_KEY=...your key...
+   ```
+
+4. Launch training. The defaults mirror the local `train.py` main block, but
+   you can pass flags to override epochs, batch size, checkpoint names, etc.:
+
+   ```sh
+   modal run train_modal.py --epochs 200 --train_steps_per_epoch 25 --val_steps 3 --wandb_project cs336-assignment1
+   ```
+
+   Checkpoints are saved back into the same volume (e.g.
+   `/data/owt-training-checkpoint-<timestamp>.pt`). Retrieval uses the
+   CLI: `modal volume get cs336-basics-data owt-training-checkpoint-<ts>.pt .`.
+
+The Modal function requests an A100 (80GB) GPU, installs the repo dependencies, and
+invokes `train_with_config` with `device="cuda"`. Adjust the GPU type or image
+dependencies in `train_modal.py` if your account has access to different
+hardware.
