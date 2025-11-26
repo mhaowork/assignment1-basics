@@ -5,6 +5,9 @@ import sys
 from pathlib import Path
 
 REPO_MOUNT_PATH = "/root/project"
+SOURCE_DIRS = [
+  "cs336_basics",
+]
 if REPO_MOUNT_PATH not in sys.path:
   sys.path.append(REPO_MOUNT_PATH)
 
@@ -53,8 +56,14 @@ image = (
   modal.Image.debian_slim(python_version="3.11")
   .pip_install(f"torch=={TORCH_VERSION}", extra_index_url=TORCH_INDEX_URL)
   .pip_install(*BASE_DEPENDENCIES)
-  .add_local_dir(".", remote_path=REPO_MOUNT_PATH)
 )
+
+for directory in SOURCE_DIRS:
+  image = image.add_local_dir(
+    directory,
+    remote_path=f"{REPO_MOUNT_PATH}/{directory}",
+    ignore=[".git", "__pycache__", "*.pt"],
+  )
 
 function_kwargs = dict(
   image=image,
