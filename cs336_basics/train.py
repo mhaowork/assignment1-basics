@@ -44,6 +44,7 @@ def train(
   num_heads: int,
   d_ff: int,
   rope_theta: float,
+  learning_rate: float,
   device: str,
   out_checkpoint_file: str | os.PathLike,
   train_steps_per_epoch: int = 100,
@@ -62,7 +63,7 @@ def train(
     rope_theta=rope_theta,
     device=device,
   )
-  optimizer = AdamW(params=model.parameters())
+  optimizer = AdamW(params=model.parameters(), lr=learning_rate)
 
   wandb_run = None
   if wandb_settings is not None:
@@ -242,6 +243,7 @@ def train_with_config(
     num_heads=config.num_heads,
     d_ff=config.d_ff,
     rope_theta=config.rope_theta,
+    learning_rate=config.learning_rate,
     device=device,
     out_checkpoint_file=paths.out_checkpoint_file,
     train_steps_per_epoch=train_steps_per_epoch,

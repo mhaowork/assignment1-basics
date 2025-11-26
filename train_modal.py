@@ -67,7 +67,7 @@ for directory in SOURCE_DIRS:
 
 function_kwargs = dict(
   image=image,
-  gpu=modal.gpu.A100(size="80GB"),
+  gpu="A100-80GB",
   volumes={str(DATA_MOUNT_PATH): data_volume},
   timeout=60 * 60 * 12,
 )
