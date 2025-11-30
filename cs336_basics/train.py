@@ -13,6 +13,7 @@ from cs336_basics.cross_entropy import calc_cross_entropy
 from cs336_basics.get_batch import get_batch
 from cs336_basics.gradient_clipping import do_gradient_clipping
 from cs336_basics.letstokenize import get_vocab_size
+from cs336_basics.lr_schedule import get_lr_cosine_schedule
 from cs336_basics.model_config import ModelConfig
 from cs336_basics.transformer_lm import TransformerLM
 
@@ -44,7 +45,11 @@ def train(
   num_heads: int,
   d_ff: int,
   rope_theta: float,
-  learning_rate: float,
+  lr_max: float,
+  lr_min: float,
+  warm_up_steps: int,
+  annealing_steps: int,
+  gradient_accumulation_steps: int = 1,
   device: str,
   out_checkpoint_file: str | os.PathLike,
   train_steps_per_epoch: int = 100,
@@ -63,7 +68,14 @@ def train(
     rope_theta=rope_theta,
     device=device,
   )
-  optimizer = AdamW(params=model.parameters(), lr=learning_rate)
+  optimizer = AdamW(params=model.parameters(), lr=lr_max)
+  gradient_accumulation_steps = max(1, gradient_accumulation_steps)
+  updates_per_epoch = (train_steps_per_epoch + gradient_accumulation_steps - 1) // gradient_accumulation_steps
+  final_group_size = (
+    train_steps_per_epoch % gradient_accumulation_steps
+    if train_steps_per_epoch % gradient_accumulation_steps != 0
+    else gradient_accumulation_steps
+  )
 
   wandb_run = None
   if wandb_settings is not None:
@@ -80,7 +92,11 @@ def train(
       vocab_size=vocab_size,
       train_steps_per_epoch=train_steps_per_epoch,
       val_steps=val_steps,
-      learning_rate=optimizer.param_groups[0]["lr"],
+      lr_max=lr_max,
+      lr_min=lr_min,
+      warm_up_steps=warm_up_steps,
+      annealing_steps=annealing_steps,
+      gradient_accumulation_steps=gradient_accumulation_steps,
       device=device,
     )
     wandb_run = wandb.init(
@@ -112,12 +128,17 @@ def train(
         break
       model.train()
       epoch_loss = 0.0
+      accum_loss = 0.0
+      accum_count = 0
+      update_counter = 0
+      global_update_step = epoch * updates_per_epoch
+      optimizer.zero_grad()
       
       # Training loop - get a new batch for each step
       for step in range(train_steps_per_epoch):
+        accumulation_edge = ((step + 1) % gradient_accumulation_steps == 0) or (step + 1 == train_steps_per_epoch)
+
         batch_inputs, batch_targets = get_batch(dataset=train_dataset, batch_size=batch_size, context_length=context_length, device=device)
-        
-        optimizer.zero_grad()
 
         logits = model(batch_inputs) # shape [batch_size, seq_len, vocab_size]
 
@@ -125,31 +146,53 @@ def train(
           logits=logits.view(-1, vocab_size),
           targets=batch_targets.view(-1),
         )
+        loss_item = loss.item()
+        current_group_index = step // gradient_accumulation_steps
+        current_group_size = (
+          final_group_size if current_group_index == updates_per_epoch - 1 else gradient_accumulation_steps
+        )
+        loss = loss / current_group_size
         loss.backward() # compute grads
+        accum_loss += loss_item
+        accum_count += 1
+        epoch_loss += loss_item
 
         if device == 'mps' and torch.backends.mps.is_available():
           current_mem = torch.mps.current_allocated_memory() / (1024 ** 2)
           print(f"    MPS allocated memory: {current_mem:.2f} MB")
 
-        do_gradient_clipping(model.parameters(), max_l2_norm=1.0)
-
-        optimizer.step()
-        
-        epoch_loss += loss.item()
-        
-        print(f"  Step {step + 1}/{train_steps_per_epoch}, Loss: {loss.item():.4f}")
-
-        if wandb_run is not None:
-          global_step = epoch * train_steps_per_epoch + step + 1
-          wandb_run.log(
-            {
-              "train/loss": loss.item(),
-              "train/step": step + 1,
-              "epoch": epoch,
-              "global_step": global_step,
-            },
-            step=global_step,
+        if accumulation_edge:
+          do_gradient_clipping(model.parameters(), max_l2_norm=1.0)
+          update_counter += 1
+          global_update_step += 1
+          lr = get_lr_cosine_schedule(
+              t=global_update_step,
+              lr_max=lr_max,
+              lr_min=lr_min,
+              warm_up_steps=warm_up_steps,
+              annealing_steps=annealing_steps
           )
+          for param_group in optimizer.param_groups:
+              param_group['lr'] = lr
+          optimizer.step()
+          optimizer.zero_grad()
+          avg_accum_loss = accum_loss / accum_count
+          accum_loss = 0.0
+          accum_count = 0
+        
+          print(f"  Step {step + 1}/{train_steps_per_epoch} (update {global_update_step}), Loss: {avg_accum_loss:.4f}, LR: {lr:.6f}")
+
+          if wandb_run is not None:
+            wandb_run.log(
+              {
+                "train/loss": avg_accum_loss,
+                "train/lr": lr,
+                "train/step": update_counter,
+                "epoch": epoch,
+                "global_step": global_update_step,
+              },
+              step=global_update_step,
+            )
 
       avg_train_loss = epoch_loss / train_steps_per_epoch
       print(f"Epoch {epoch}, Average Training Loss: {avg_train_loss:.4f}")
@@ -158,9 +201,9 @@ def train(
           {
             "train/avg_epoch_loss": avg_train_loss,
             "epoch": epoch,
-            "global_step": (epoch + 1) * train_steps_per_epoch,
+            "global_step": global_update_step,
           },
-          step=(epoch + 1) * train_steps_per_epoch,
+          step=global_update_step,
         )
       
       # Validation loop
@@ -188,9 +231,9 @@ def train(
             {
               "val/loss": avg_val_loss,
               "epoch": epoch,
-              "global_step": (epoch + 1) * train_steps_per_epoch,
+              "global_step": global_update_step,
             },
-            step=(epoch + 1) * train_steps_per_epoch,
+            step=global_update_step,
           )
       epoch += 1
   except KeyboardInterrupt:
@@ -217,6 +260,7 @@ def train_with_config(
   train_steps_per_epoch: int = 100,
   val_steps: int = 10,
   batch_size: int | None = None,
+  gradient_accumulation_steps: int | None = None,
   wandb_settings: WandbSettings | None = None,
   train_dataset=None,
   valid_dataset=None,
@@ -243,7 +287,11 @@ def train_with_config(
     num_heads=config.num_heads,
     d_ff=config.d_ff,
     rope_theta=config.rope_theta,
-    learning_rate=config.learning_rate,
+    lr_max=config.lr_max,
+    lr_min=config.lr_min,
+    warm_up_steps=config.warm_up_steps,
+    annealing_steps=config.annealing_steps,
+    gradient_accumulation_steps=gradient_accumulation_steps or config.gradient_accumulation_steps,
     device=device,
     out_checkpoint_file=paths.out_checkpoint_file,
     train_steps_per_epoch=train_steps_per_epoch,

@@ -1,0 +1,37 @@
+{
+  "os":  "macOS-15.6.1-arm64-arm-64bit",
+  "python":  "CPython 3.11.5",
+  "startedAt":  "2025-11-26T01:41:34.712037Z",
+  "program":  "/Users/zsmbp/saas/cs336/assignment1-basics/cs336_basics/train.py",
+  "codePath":  "cs336_basics/train.py",
+  "codePathLocal":  "train.py",
+  "git":  {
+    "remote":  "https://github.com/mhaowork/assignment1-basics",
+    "commit":  "3bbf6b34a4d55c73f2338fca6f0aac98c48f0466"
+  },
+  "email":  "me@zqzas.com",
+  "root":  "/Users/zsmbp/saas/cs336/assignment1-basics/cs336_basics",
+  "host":  "zsmbpn-3.local",
+  "executable":  "/Users/zsmbp/saas/cs336/assignment1-basics/.venv/bin/python3",
+  "cpu_count":  10,
+  "cpu_count_logical":  10,
+  "disk":  {
+    "/":  {
+      "total":  "994662584320",
+      "used":  "990793306112"
+    }
+  },
+  "memory":  {
+    "total":  "34359738368"
+  },
+  "apple":  {
+    "name":  "Apple M1 Pro",
+    "ecpuCores":  2,
+    "pcpuCores":  8,
+    "gpuCores":  14,
+    "memoryGb":  32,
+    "swapTotalBytes":  "12079595520",
+    "ramTotalBytes":  "34359738368"
+  },
+  "writerId":  "eibf65esl2muqcnnhjb22gpa0ykj7zvj"
+}
